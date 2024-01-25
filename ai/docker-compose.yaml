@@ -1,0 +1,81 @@
+version: "3.7"
+
+services:
+  deepstack:
+    image: deepquestai/deepstack:gpu
+    restart: always
+    container_name: deepstack
+    ports:
+      - "5002:5000"
+    environment:
+      - TZ=Asia/Jerusalem
+      - VISION-FACE=True
+      - VISION-DETECTION=True
+      - VISION-SCENE=True
+      # - API-KEY=
+    volumes:
+      - ./deepstack:/datastore
+      - /etc/localtime:/etc/localtime:ro
+    labels:
+      - "com.ouroboros.enable=false"
+    networks:
+      - docker
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            # count: 1
+            capabilities: [gpu]
+
+  deepstack_trainer:
+    image: techblog/deepstack-trainer
+    container_name: deepstack_trainer
+    privileged: true
+    restart: always
+    environment:
+      - DEEPSTACK_HOST_ADDRESS=
+      - MIN_CONFIDANCE=0.7
+    ports:
+      - "5003:8080" 
+    networks:
+      - docker
+
+  deepstack_ui:
+    container_name: deepstack_ui
+    restart: always
+    image: robmarkcole/deepstack-ui:latest
+    environment: 
+      - DEEPSTACK_IP=
+      - DEEPSTACK_PORT=5002
+      - DEEPSTACK_API_KEY=""
+      - DEEPSTACK_TIMEOUT=20
+      - TZ=Asia/Jerusalem
+    ports:
+      - '8501:8501'
+    networks:
+      - docker
+
+
+  deoldify:
+    image: techblog/deoldify
+    container_name: deoldify
+    restart: always
+    environment:
+      - BOT_TOKEN=
+      - RENDER_FACTOR=40 #Optional, Default is 30
+    volumes:
+      - ./deoldify/models:/data/models
+      - /etc/localtime:/etc/localtime:ro      
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            # count: 1
+            capabilities: [gpu]
+
+networks:
+  docker:
+    name: docker
+    external: true
