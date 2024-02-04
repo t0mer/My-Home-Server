@@ -1,0 +1,29 @@
+---
+version: "3.7"
+
+services:
+
+  botami:
+    image: techblog/botami4:latest
+    container_name: botami
+    restart: always
+    environment:
+      - BOT_TOKEN=
+      - ALLOWED_IDS=
+    volumes:
+      - ./botami/tokens:/opt/botami/token
+
+
+  redalert:
+    image: techblog/redalert
+    container_name: redalert
+    restart: always
+    environment:
+      - MQTT_HOST=
+      - MQTT_USER=
+      - MQTT_PASS=
+      - DEBUG_MODE=
+      - REGION=*
+      - NOTIFIERS=
+    labels:
+      - "com.ouroboros.enable=true"
