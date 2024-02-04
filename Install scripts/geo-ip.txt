@@ -1,0 +1,25 @@
+#GeoIP Setup:
+export  FREEGEOIP_VERSION=3.4.1
+export FREEGEOIP_FILE=freegeoip-${FREEGEOIP_VERSION}-linux-amd64.tar.gz
+export FREEGEOIP_URL=https://github.com/fiorix/freegeoip/releases/download/v${FREEGEOIP_VERSION}/${FREEGEOIP_FILE}
+mkdir -p /opt/freegeoip/data
+cd /opt/freegeoip
+curl -sSL ${FREEGEOIP_URL} | tar xz --strip 1
+cd data
+wget https://github.com/wp-statistics/GeoLite2-City/raw/master/GeoLite2-City.mmdb.gz
+
+
+#GeoIP Systemd:
+[Unit]
+Description=Snmp Rest Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/freegeoip
+ExecStart=/opt/freegeoip/freegeoip -public public -http :8080 -internal-server :8888 -db data/GeoLite2-City.mmdb.gz
+
+[Install]
+WantedBy=multi-user.target
+
