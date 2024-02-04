@@ -1,0 +1,12 @@
+#Muli arc docker installation script:
+curl -fsSL get.docker.com -o get-docker.sh && sh get-docker.sh
+
+
+#Docker-compose:
+## AMD64
+curl -L https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+
+## ARM64
+sudo curl -L https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-linux-aarch64 -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
