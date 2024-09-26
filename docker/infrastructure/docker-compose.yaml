@@ -1,0 +1,177 @@
+version: "3.7"
+
+services:
+
+  mail-relay:
+    image: mwader/postfix-relay:latest
+    container_name: mail-relay
+    restart: always
+    environment:
+      - POSTFIX_myhostname=klein.org.il
+      - "POSTFIX_mynetworks=127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 172.0.0.0/8 192.168.0.0/16"
+      - POSTFIX_mydestination=
+      - POSTFIX_smtp_tls_security_level=may
+      - POSTFIX_smtpd_tls_security_level=none
+      - POSTFIX_smtp_sasl_auth_enable=yes
+      - "POSTFIX_smtp_sasl_password_maps=hash:/etc/postfix/sasl/sasl_passwd"
+      - POSTFIX_smtp_sasl_security_options=noanonymous
+      - POSTFIX_relayhost=${UPSTREAM_SMTP_HOST:?Please copy template.env to .env and provide provide a value for UPSTREAM_SMTP_HOST}
+      - relayhost_username=${UPSTREAM_SMTP_USERNAME:?Please copy template.env to .env and provide provide a value for UPSTREAM_SMTP_USERNAME}
+      - relayhost_passwd=${UPSTREAM_SMTP_PASSWORD:?Please copy template.env to .env and provide provide a value for UPSTREAM_SMTP_PASSWORD}
+      - POSTFIX_smtp_tls_CAfile=/etc/ssl/certs/ca-certificates.crt #might need to change if not on Debian-based linux, uesd to validate secure connection to SMTP
+      - POSTFIX_smtp_tls_note_starttls_offer=yes
+      - POSTFIX_smtp_use_tls=yes
+    ports:
+      - "25:25"
+    labels:
+      - "com.ouroboros.enable=true"
+      - "traefik.enable=false"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro 
+      - ./mail-relay/lib-postfix:/var/lib/postfix
+      - ./mail-relay/mail:/var/mail
+      - ./mail-relay/spool-postfix:/var/spool/postfix
+      - ./mail-relay/opendkim-keys:/etc/opendkim/keys
+      - ./mail-relay/sasl:/etc/postfix/sasl
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro #use host's CAs to validate remote SMTP certs, may need to change if not on debian-based linux
+    command: '/bin/bash -c "echo $$POSTFIX_relayhost $$relayhost_username:$$relayhost_passwd > /etc/postfix/sasl/sasl_passwd && /usr/sbin/postmap /etc/postfix/sasl/sasl_passwd && /root/run"'
+    networks:
+      - mail
+
+
+  pialert:
+    container_name: pialert
+    image: jokobsk/pi.alert:latest
+    network_mode: host
+    restart: always
+    volumes:
+      - /etc/localtime:/etc/localtime:ro 
+      - ./pialert/db:/home/pi/pialert/db
+      - ./pialert/config:/home/pi/pialert/config 
+      - ./pialert/logs:/home/pi/pialert/front/log
+    environment:
+      - TZ=Asia/Jerusalem
+
+  mysql:
+    container_name: mysql
+    image: mariadb:latest
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    labels:
+      - "com.ouroboros.enable=true"
+      - "traefik.enable=false"
+    volumes:
+      - "./mysql:/var/lib/mysql"
+      - /etc/localtime:/etc/localtime:ro
+    restart: always
+    networks:
+      - mysql
+
+  phpmyadmin:
+    hostname: phpmyadmin
+    container_name: phpmyadmin
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    links:
+      - mysql
+    ports:
+      - 8081:80
+    environment:
+      - PMA_HOST=${PMA_HOST:?Please copy template.env to .env and provide provide a value for PMA_HOST}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    labels:
+      - "com.ouroboros.enable=true"
+      - "traefik.enable=false"
+    networks:
+      - mysql
+      - internal
+    volumes:
+      - /etc/localtime:/etc/localtime:ro 
+
+  chrony:
+    image: publicarray/chrony:latest
+    container_name: Chrony
+    restart: always
+    ports:
+    - 123:123/udp
+    volumes:
+    - ./chrony/chrony.conf:/etc/chrony.conf
+    - /etc/localtime:/etc/localtime:ro        
+    cap_add:
+      - SYS_TIME
+    network_mode: bridge
+    labels:
+      - "com.ouroboros.enable=false"
+      - "traefik.enable=false"
+    environment:      
+      - TZ=Asia/Jerusalem
+
+  adguard-home:
+    image: adguard/adguardhome
+    container_name: adguard-home
+    restart: always
+    network_mode: host
+    volumes:
+      - ./adguard/work:/opt/adguardhome/work
+      - ./adguard/conf:/opt/adguardhome/conf
+      - /etc/localtime:/etc/localtime:ro 
+    labels:
+      - "com.ouroboros.enable=true"
+      - "traefik.enable=false"
+
+  openspeedtest:
+    image: openspeedtest/latest
+    container_name: openspeedtest
+    restart: always
+    volumes:
+      - /etc/localtime:/etc/localtime:ro 
+    labels:
+      - "com.ouroboros.enable=true"
+      - "traefik.enable=false"
+    ports:
+      - "3004:3000"
+      - "3005:3001"
+    networks:
+      - internal
+
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    hostname: mosquitto
+    container_name: mosquitto
+    restart: always
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto:/etc/mosquitto
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    labels:
+      - "com.ouroboros.enable=true"
+      - "traefik.enable=false"
+    networks:
+      - default
+
+  cloudflare-ddns:
+    image: oznu/cloudflare-ddns:latest
+    restart: always
+    environment:
+      - API_KEY=
+      - ZONE=
+      - SUBDOMAIN=*
+      - PROXIED=false 
+
+
+
+networks:
+  mysql:
+    name: mysql
+    external: true
+  mail:
+    name: mail
+    external: true
+  internal:
+    name: internal
+    external: true

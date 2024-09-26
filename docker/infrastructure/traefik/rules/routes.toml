@@ -1,0 +1,34 @@
+  [http.routers.plex-rtr]
+      entryPoints = ["https"]
+      rule = "Host(`plex.[my_domain]`)"
+      service = "plex-svc"
+      [http.routers.plex-rtr.tls]
+        certresolver = "dns-cloudflare"
+
+  [http.routers.tvh-rtr]
+      entryPoints = ["https"]
+      rule = "Host(`tvh.[my_domain]`)"
+      
+      service = "tvh-svc"
+      [http.routers.tvh-rtr.tls]
+        certresolver = "dns-cloudflare"
+
+
+
+
+[http.services]
+  [http.services.plex-svc]
+    [http.services.plex-svc.loadBalancer]
+      passHostHeader = true
+      [[http.services.plex-svc.loadBalancer.servers]]
+        url = "http://[server_ip]:32400"
+
+
+  [http.services.tvh-svc]
+    [http.services.tvh-svc.loadBalancer]
+      passHostHeader = true
+      [[http.services.tvh-svc.loadBalancer.servers]]
+        url = "http://[server_ip]:9981"
+
+
+
