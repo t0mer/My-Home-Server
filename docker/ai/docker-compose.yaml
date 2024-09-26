@@ -20,13 +20,13 @@ services:
       - "com.ouroboros.enable=false"
     networks:
       - docker
-    deploy:
-      resources:
-        reservations:
-          devices:
-          - driver: nvidia
-            # count: 1
-            capabilities: [gpu]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #       - driver: nvidia
+    #         # count: 1
+    #         capabilities: [gpu]
 
   deepstack_trainer:
     image: techblog/deepstack-trainer
@@ -74,6 +74,23 @@ services:
           - driver: nvidia
             # count: 1
             capabilities: [gpu]
+
+  CodeProject.AI:
+    image: codeproject/ai-server:cuda12_2
+    container_name: CodeProject.AI
+    restart: always
+    ports:
+      - "32168:32168"
+ #   deploy:
+ #     resources:
+ #       reservations:
+ #         devices:
+ #           - driver: nvidia
+ #             capabilities: [gpu]
+    volumes:
+      - "./codeproject/ai/etc:/etc/codeproject/ai"
+      - "./codeproject/ai/modules:/app/modules"
+
 
 networks:
   docker:
