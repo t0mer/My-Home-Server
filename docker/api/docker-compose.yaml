@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  wapi:
+    container_name: wapi
+    image: chrishubert/whatsapp-web-api:latest # Pull the image from Docker Hub
+    restart: always
+    # user: root
+    ports:
+      - "3033:3000"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Jerusalem
+      # - API_KEY=T0mer!2405-77!
+      # - BASE_WEBHOOK_URL=http://localhost:3000/localCallbackExample
+      - ENABLE_LOCAL_CALLBACK_EXAMPLE=TRUE # OPTIONAL, NOT RECOMMENDED TO ENABLE FOR PRODUCTION. Remove after QR scan
+      - MAX_ATTACHMENT_SIZE=5000000 # IN BYTES
+      - SET_MESSAGES_AS_SEEN=FALSE # WILL NOT MARK THE MESSAGES AS READ AUTOMATICALLY
+      # ALL CALLBACKS: auth_failure|authenticated|call|change_state|disconnected|group_join|group_leave|group_update|loading_screen|media_uploaded|message|message_ack|message_create|message_reaction|message_revoke_everyone|qr|ready|contact_changed
+      - DISABLED_CALLBACKS=message_ack  # PREVENT SENDING CERTAIN TYPES OF CALLBACKS BACK TO THE WEBHOOK
+      - ENABLE_SWAGGER_ENDPOINT=TRUE #When enabled, adding "/api-docs" to the url will open Swagger. Not recomended to production.
+    volumes:
+      - ./wapi/sessions:/usr/src/app/sessions # Mount the local ./sessions/ folder to the container's /usr/src/app/sessions folder
+
+
+  wapi_dev:
+    container_name: wapi_dev
+    image: chrishubert/whatsapp-web-api:latest # Pull the image from Docker Hub
+    restart: always
+    # user: root
+    ports:
+      - "3034:3000"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Jerusalem
+      # - API_KEY=very_secured_token
+      - BASE_WEBHOOK_URL=http://localhost:3000/localCallbackExample
+      - ENABLE_LOCAL_CALLBACK_EXAMPLE=TRUE # OPTIONAL, NOT RECOMMENDED TO ENABLE FOR PRODUCTION. Remove after QR scan
+      - MAX_ATTACHMENT_SIZE=5000000 # IN BYTES
+      - SET_MESSAGES_AS_SEEN=FALSE # WILL NOT MARK THE MESSAGES AS READ AUTOMATICALLY
+      # ALL CALLBACKS: auth_failure|authenticated|call|change_state|disconnected|group_join|group_leave|group_update|loading_screen|media_uploaded|message|message_ack|message_create|message_reaction|message_revoke_everyone|qr|ready|contact_changed
+      - DISABLED_CALLBACKS=message_ack  # PREVENT SENDING CERTAIN TYPES OF CALLBACKS BACK TO THE WEBHOOK
+      - ENABLE_SWAGGER_ENDPOINT=TRUE #When enabled, adding "/api-docs" to the url will open Swagger. Not recomended to production.
+    volumes:
+      - ./wapi_dev/sessions:/usr/src/app/sessions # Mount the local ./sessions/ folder to the container's /usr/src/app/sessions folder
