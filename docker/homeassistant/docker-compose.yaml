@@ -1,0 +1,99 @@
+---
+version: "3.7"
+
+services:
+
+
+  homeassistant:
+    container_name: homeassistant
+    privileged: true
+    image: homeassistant/home-assistant
+    restart: always
+    network_mode: "host"
+    volumes:
+      - /mnt/hass:/config:rw
+      - /etc/localtime:/etc/localtime:ro    
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "com.ouroboros.enable=true"
+    environment:      
+      - PUID=${PUID}
+      - PGID=${PGID}
+
+ 
+  broadlinkmanager:
+    image: techblog/broadlinkmanager
+    network_mode: host
+    container_name: broadlinkmanager
+    restart: always
+    labels:
+      - "com.ouroboros.enable=true"
+    environment:
+      - ENABLE_GOOGLE_ANALYTICS=False
+
+  tasmota-admin:
+    image: ghcr.io/tasmoadmin/tasmoadmin:latest
+    container_name: tasmota-admin
+    restart: always
+    ports:
+      - 8111:80
+    labels:
+      - "com.ouroboros.enable=true"
+    volumes:
+      - ./tasmota-admin/to/data:/data
+
+  xiaomi_token_extractor:
+    image: techblog/xiaomi_token_extractor:latest
+    container_name: xiaomi_token_extractor
+    restart: always
+    labels:
+      - "com.ouroboros.enable=true"
+    environment:
+      - XIA_USER=
+      - XIA_PASS=
+      - XIA_SRV=  #Optional: ["cn", "de", "us", "ru", "tw", "sg", "in", "i2"]
+    ports:
+      - "8888:8080"
+    # volumes:
+    #   - ./xiasrv:/opt/xiasrv
+
+  zanzito-thingsboard-exporter:
+    image: techblog/zanzito-thingsboard-exporter
+    container_name: zanzito-thingsboard-exporter
+    restart: always
+    environment:
+      - TB_SERVER_ADDRESS= #eg. http://localhost:8080 http://my-server.addrsss https://mytb.com
+      - MQTT_BROKER_ADDRESS=
+      - MQTT_BROKER_PORT=1883
+      - MQTT_BROKER_USER=
+      - MQTT_BROKER_PASSWORD=
+    volumes:
+      - ./zanzito-thingsboard-exporter/config:/app/config
+
+
+  adb_api:
+    image: techblog/adb-api
+    container_name: adb-api
+    privileged: true
+    restart: always
+    ports:
+      - "9876:80" 
+    volumes:
+      - ./adb-api/config:/app/config
+
+  tasmota-thingsboard-bridge:
+    image: techblog/tasmota-thingsboard-bridge
+    container_name: tasmota-thingsboard-bridge
+    restart: always
+    environment:
+      - TB_SERVER_ADDRESS=
+      - REPORT_INTERVAL=10
+    volumes:
+      - ./tasmota-tb/config:/app/config
+
+networks:
+  internal:
+    name: internal
+    external: true
+
+
